@@ -1,0 +1,488 @@
+\documentclass[11pt]{article}
+
+% ----------------------------
+% Packages
+% ----------------------------
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{array}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{float}
+\usepackage[table]{xcolor}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{mathtools}
+
+\geometry{
+  left=1in,
+  right=1in,
+  top=1in,
+  bottom=1in
+}
+
+% ----------------------------
+% Formatting helpers
+% ----------------------------
+\setlist[itemize]{leftmargin=1.2em}
+\setlist[enumerate]{leftmargin=1.6em}
+
+% ----------------------------
+% Math notation
+% ----------------------------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\thetaVec}{\theta}
+\newcommand{\ip}[2]{\left\langle #1,#2\right\rangle}
+\newcommand{\norm}[1]{\left\lVert #1\right\rVert}
+\newcommand{\sigm}{\sigma}
+\newcommand{\scorei}{s_{\thetaVec}(\x^i)}
+\newcommand{\pii}{p^i}
+\newcommand{\Sig}{\sigm(\scorei)}
+\newcommand{\SigPrime}{\sigm(\scorei)\bigl(1-\sigm(\scorei)\bigr)}
+
+% ----------------------------
+% Theorem environments (lightweight “note” tone)
+% ----------------------------
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+
+% ----------------------------
+% Title
+% ----------------------------
+\title{\textbf{AM230 Neural Network Regression}\\[0.25em]\Large Numerical Optimization Methods}
+\author{Luke Catalano\\\small UC Santa Cruz, M.S. Quantitative Economics}
+\date{February 2026}
+
+\begin{document}
+
+\maketitle
+
+\section*{Project Overview \& Regression Setup}
+We consider a system whose behavior is described by an unknown input–output map
+\[
+\mathcal{F}: \mathbb{R}^{d} \mapsto \mathbb{R}^{p}
+\]
+The function $\mathcal{F}$ may represent a physical process, a computational routine, or any black-box
+mechanism for which only input–output measurements are available. We assume that $\mathcal{F}$
+itself is not accessible. Instead, we observe a finite set of input–output samples:
+\[
+\{(x^i, y^i)\}^{N}_{i=1}
+\]
+Where $x^i \in \mathbb{R}^d$ denotes the input, where d is the dimension of the input feature space, and $y^i \in \mathbb{R}^p$ denotes the output, where p is the dimension of the output space. 
+\\
+\\
+The objective is to construct a data-driven model:
+\[
+f(x) \approx \mathcal{F}(x)
+\]
+using only the observed input–output pairs. Such a model can be used for prediction, simulation, or as a surrogate model in downstream analysis. In this project, we will use a neural network to construct our model:
+\[
+\mathcal{F}(x) \approx f^{NN}(x;\theta)
+\]
+where $f^{NN}(x;\theta)$ is a feedforward neural network with parameter $\theta$. The parameter will be determined by minimizing a data-missfit objective. Neural
+networks can be viewed as a nonlinear generalization of linear regression, in which the basis
+functions themselves are parameterized and learned from data rather than fixed a priori.
+
+\subsection*{Feedforward Neural Network Model}
+A feedforward neural network consists of the following components:
+\begin{itemize}
+    \item An input layer, which receives the input vector $x \in \R^d$ 
+    \item One or more hidden layers, which apply nonlinear transformations to input x or intermediate features. 
+    \item An output layer, which produces the final model output.
+\end{itemize}
+\newpage
+\subsection*{Hidden Layer Optimization Objective}
+For simplicity, we assume that each hidden layers contain the same number of neurons denoted as $m$. The first hidden layer takes input $x \in \R^d$ and generates an intermediate output $z^{(1)} \in \R$ according to:
+\[
+s^{(1)} = W^{(1)} x + b^{(1)}, \quad z^{(1)} = \sigma(s^{(1)})
+\]
+where $\sigma(\cdot)$ is a nonlinear function called an activation function, which is applied component wise to its argument. For any $v  = [v_1, v_2,\dots,v_m]^T$
+\[
+\sigma(v) = \begin{bmatrix}
+    \sigma(v_1) \\ \vdots \ \\ \sigma(v_m)
+\end{bmatrix}
+\]
+$W^{(1)} \in \R^{m\times d}$ and $b^{(1)}$ are the weights and biases of the first hidden layer. They will be determined by minimizing the following loss function: 
+\[
+\min_{\theta \in \R^P} L(\theta) = \min_{\theta \in \R^P} \frac{1}{2N} \sum^N||f^{NN}(x^i;\theta)-y^i||^2_2
+\]
+where P is the total number of trainable parameters in the neural network.
+\\
+\\
+The second hidden layer functions in the same way, but takes $z^{(1)}$ as input and generates an indermediate output $z^{(1)} \in \R^m$ according to 
+\[
+s^{(2)} = W^{(2)} z^{(1)} + b^{(2)}, \quad z^{(2)} = \sigma(s^{(2)})
+\]
+where $W^{(2)} \in \R^{m\times m}$ and $b^{(2)} \in \R^m$ are the weights and biases of the second hidden layer. The same pattern applies for the remaining hidden layers for $n \geq 2$
+\[
+s^{(n)} = W^{(n)} z^{(n-1)} + b^{(n)}, \quad z^{(n)} = \sigma(s^{(n)})
+\]
+with trainable parameters  $W^{(n)} \in \R^{m\times m}$ and $b^{(n)} \in \R^m$ 
+\\
+\\
+Finally, the output layer maps $z^{(n)}$ to the neural network output
+\[
+f^{NN}(x;\theta) = W^{(n+1)}z^{(n)} + b^{(n+1)}
+\]
+where $W^{(n+1)} \in \R^{p \times m}$ and $b^{(n+1)} \in \R^{p}$ are the weights and biases of the output layer. 
+\\
+\\
+The feedforward neural network generates its model prediction through a composition of affine transformations and nonlinear activations, fully defined by the parameter vector 
+\[
+\theta = (W^{(1)}, b^{(1)},W^{(2)}, b^{(2)},\dots,W^{(n+1)}, b^{(n+1)})
+\]
+together with the nonlinear activation function $\sigma$. 
+
+\newpage
+
+\section*{Problem size in neural network training}
+\subsection*{Total Trainable Parameters (1.1a)}
+First, we will compute the total number of trainable parameters (weights and biases) in terms of $d$, $m$, $n$, and $p$ for a fully connected feedforward neural network as seen above. 
+\\
+\\
+Layer 1 (Input $\rightarrow$ Hidden Layer 1) contains the weights $m\times d$ and the bias $m$, providing $md+m$ trainable parameters. 
+\\
+\\
+Hidden layers 2 through $n$ (Hidden Layer $i > 1$ $\rightarrow$ Hidden Layer $i+1 < n+1$) each contain weights $m\times m = m^2$, and bias $m$. There are n-1 of these layers, providing $(n-1)(m^2+m)$ trainable parameters. 
+\\
+\\
+Output Layer (Hidden layer $n \rightarrow$ Output) contains the weights $pm$, and bias $p$, providing $pm+p$ trainable parameters. 
+\\
+\\
+Combining all layers together gives a total trainable parameter count of: 
+\[
+P = (md+m) + (n-1)(m^2+m) + (pm+p) = (n-1)m^2 + m(d + n + p) +p
+\]
+\subsection*{Scaling with m and n, holding d and p fixed (1.1b)}
+As width (m) grows, the dominant term is $(n-1)m^2$, which is \textbf{quadratic in m}
+\\
+\\
+As depth (n) grows, the dominant term is $(n-1)m^2$, which is \textbf{linear in n but quadratic in m. }
+\\
+\\
+The most significant driver of parameter growth is width (m) as it scales quadratically compared to the linear growth of depth (n). 
+\subsection*{Memory Usage Assuming 8 bytes per entry (1.1c)}
+Suppose we fix d = 10, m = 1000, n = 100, and p = 10 (total parameters $P\approx 9.912 \times 10^7$). This would result in the following memory usage: 
+\begin{itemize}
+    \item Parameter Vector $\theta:$ $8P \approx 8\cdot 99,120,010 = 792,960,080 \text{ bytes} \approx 0.793 \text { GB}$
+    \item Full Hessian $\nabla^2L(\theta): 8P^2 \approx 8(9.912 \times 10^7)^2 \approx 8\times 10^{15} \text{ bytes} \approx 80 \text{ PB}$
+\end{itemize}
+Storing $\theta$ is feasible ($O(P)$ memory), while storing a full Hessian is completely infeasible at this scale ($O(P^2)$ memory ) 
+\subsection*{Implications for First-Order methods versus Second-Order Methods (1.1d)} 
+We see firsthand that storing a full hessian requires petabytes worth of storage, making training/testing completely infeasible at this scale. Methods that require the derivation of the full hessian such as Newton's method and derivations such as BFGS, are impractical. Subsequently, we move to rely on first-order methods, which only require the computation and storage of the parameter set (1st order gradient), or limited memory BFGS, which relies on sparse approximations of the full Hessian. 
+\newpage
+\section*{Properties of Neural Network Regression}
+\subsection*{Nonconvexity of Neural Network Training (2.1a)}
+
+We consider the simplified neural network with one hidden layer ($n=1$), one neuron ($m=1$), input $x \in \R$, and output $\hat{y} \in \R$:
+
+\[
+\hat{y} = w^{(2)} \tanh(w^{(1)}x + b^{(1)}) + b^{(2)}.
+\]
+Define the residual
+\[
+r(\theta;x,y) = \hat{y} - y
+= w^{(2)}\tanh(w^{(1)}x + b^{(1)}) + b^{(2)} - y,
+\]
+so that the per-sample loss is
+\[
+\ell(\theta;x,y) = \frac{1}{2} r(\theta;x,y)^2.
+\]
+By the chain rule,
+\[
+\nabla \ell(\theta) = r(\theta)\nabla r(\theta).
+\]
+We now compute $\nabla r(\theta)$ component-wise. We define
+\[
+s^{(1)} = w^{(1)}x + b^{(1)}, 
+\quad
+z^{(1)} = \tanh(s^{(1)}).
+\]
+Using $\tanh'(s)=1-\tanh^2(s)$, we compute:
+\[
+\frac{\partial r}{\partial w^{(1)}}
+=
+w^{(2)} (1-\tanh^2(s^{(1)})) x,
+\]
+
+\[
+\frac{\partial r}{\partial b^{(1)}}
+=
+w^{(2)} (1-\tanh^2(s^{(1)})),
+\]
+
+\[
+\frac{\partial r}{\partial w^{(2)}}
+=
+z^{(1)},
+\]
+
+\[
+\frac{\partial r}{\partial b^{(2)}}
+=
+1.
+\]
+
+Thus,
+
+\[
+\nabla r(\theta)
+=
+\begin{bmatrix}
+w^{(2)}(1-\tanh^2(s^{(1)}))x \\
+w^{(2)}(1-\tanh^2(s^{(1)})) \\
+z^{(1)} \\
+1
+\end{bmatrix} \implies 
+\nabla \ell(\theta)
+=
+r(\theta)
+\begin{bmatrix}
+w^{(2)}(1-\tanh^2(s^{(1)}))x \\
+w^{(2)}(1-\tanh^2(s^{(1)})) \\
+z^{(1)} \\
+1
+\end{bmatrix}.
+\]
+
+\subsection*{Hessian and Failure of Positive Semidefiniteness (2.1b)}
+The Hessian of the per-sample loss satisfies
+
+\[
+\nabla^2 \ell(\theta)
+=
+\nabla r(\theta)\nabla r(\theta)^T
++
+r(\theta)\nabla^2 r(\theta).
+\]
+We evaluate this expression at the parameter values
+\[
+w^{(1)} = 0,
+\quad
+b^{(1)} = 0,
+\quad
+w^{(2)} = 0.
+\]
+At this point,
+\[
+s^{(1)} = 0,
+\quad
+z^{(1)} = \tanh(0)=0,
+\quad
+\tanh'(0)=1.
+\]
+The prediction becomes
+\[
+\hat{y} = b^{(2)} \implies r(\theta) = b^{(2)} - y.
+\]
+The gradient of the residual simplifies to
+\[
+\nabla r(\theta)
+=
+\begin{bmatrix}
+0 \\
+0 \\
+0 \\
+1
+\end{bmatrix}. \implies \nabla r(\theta)\nabla r(\theta)^T
+=
+\begin{bmatrix}
+0&0&0&0\\
+0&0&0&0\\
+0&0&0&0\\
+0&0&0&1
+\end{bmatrix}
+\]
+Using the given expression for $\nabla^2 r(\theta)$ and evaluating at $w^{(1)}=b^{(1)}=w^{(2)}=0$ (with $z^{(1)}=0$ and $\tanh''(0)=0$), all entries vanish except:
+\[
+\frac{\partial^2 r}{\partial w^{(1)} \partial w^{(2)}} = x,
+\quad
+\frac{\partial^2 r}{\partial b^{(1)} \partial w^{(2)}} = 1.
+\]
+Thus,
+\[
+\nabla^2 r(\theta)
+=
+\begin{bmatrix}
+0&0&x&0\\
+0&0&1&0\\
+x&1&0&0\\
+0&0&0&0
+\end{bmatrix}.
+\]
+Therefore,
+\[
+\nabla^2 \ell(\theta)
+=
+\begin{bmatrix}
+0&0&0&0\\
+0&0&0&0\\
+0&0&0&0\\
+0&0&0&1
+\end{bmatrix}
++
+(b^{(2)}-y)
+\begin{bmatrix}
+0&0&x&0\\
+0&0&1&0\\
+x&1&0&0\\
+0&0&0&0
+\end{bmatrix}.
+\]
+The second matrix contains both positive and negative eigenvalues whenever $b^{(2)}-y \neq 0$. Hence, for some parameter value $b^{(2)}$, the Hessian has a negative eigenvalue and is not positive semidefinite.
+\\
+\\
+Therefore, the per-sample loss $\ell(\theta)$ is nonconvex in $\theta$.
+\subsection*{Extension to the Empirical Loss (2.1c)}
+
+The empirical loss is
+\[
+L(\theta)
+=
+\frac{1}{2N}
+\sum_{i=1}^{N}
+\bigl(f^{NN}(x^i;\theta)-y^i\bigr)^2
+=
+\frac{1}{N}
+\sum_{i=1}^{N}
+\ell_i(\theta).
+\]
+Its Hessian is
+\[
+\nabla^2 L(\theta)
+=
+\frac{1}{N}
+\sum_{i=1}^{N}
+\nabla^2 \ell_i(\theta).
+\]
+Since we have shown that for some sample $(x^i,y^i)$ and some parameter value $\theta$, the Hessian $\nabla^2 \ell_i(\theta)$ has a negative eigenvalue, the average Hessian $\nabla^2 L(\theta)$ also fails to be positive semidefinite at that parameter value.
+\\
+\\
+Thus, the empirical loss $L(\theta)$ is nonconvex in $\theta$.
+\subsection*{Backpropagation and Gradient Computation (2.2)}
+
+We consider a feedforward neural network with two hidden layers ($n=2$) and one neuron in each hidden layer ($m=1$). The input is $x \in \R^d$ and the output is one-dimensional $y\in\R$. The per-sample loss is
+\[
+\ell(\theta) = \frac{1}{2}\bigl(f^{NN}(x;\theta)-y\bigr)^2 = \frac{1}{2}(\hat{y}-y)^2.
+\]
+
+\subsubsection*{Forward pass}
+The forward pass computes intermediate variables:
+\[
+s^{(1)} = (w^{(1)})^T x + b^{(1)}, \qquad z^{(1)} = \sigma(s^{(1)}),
+\]
+\[
+s^{(2)} = w^{(2)} z^{(1)} + b^{(2)}, \qquad z^{(2)} = \sigma(s^{(2)}),
+\]
+\[
+\hat{y} = f^{NN}(x;\theta) = w^{(3)} z^{(2)} + b^{(3)}.
+\]
+
+\subsubsection*{Backward pass (2.2a)}
+Define the sensitivity variables
+\[
+\delta^{(3)} := \frac{\partial \ell}{\partial \hat{y}}, 
+\qquad
+\delta^{(2)} := \frac{\partial \ell}{\partial s^{(2)}}, 
+\qquad
+\delta^{(1)} := \frac{\partial \ell}{\partial s^{(1)}}.
+\]
+First,
+\[
+\delta^{(3)} = \frac{\partial}{\partial \hat{y}}\left(\frac{1}{2}(\hat{y}-y)^2\right)=\hat{y}-y.
+\]
+Next, using $\hat{y}=w^{(3)}z^{(2)}+b^{(3)}$ and $z^{(2)}=\sigma(s^{(2)})$,
+\[
+\delta^{(2)}
+=
+\frac{\partial \ell}{\partial s^{(2)}}
+=
+\frac{\partial \ell}{\partial \hat{y}}
+\frac{\partial \hat{y}}{\partial z^{(2)}}
+\frac{\partial z^{(2)}}{\partial s^{(2)}}
+=
+\delta^{(3)}\cdot w^{(3)}\cdot \sigma'(s^{(2)}).
+\]
+Finally, using $s^{(2)}=w^{(2)}z^{(1)}+b^{(2)}$ and $z^{(1)}=\sigma(s^{(1)})$,
+\[
+\delta^{(1)}
+=
+\frac{\partial \ell}{\partial s^{(1)}}
+=
+\frac{\partial \ell}{\partial s^{(2)}}
+\frac{\partial s^{(2)}}{\partial z^{(1)}}
+\frac{\partial z^{(1)}}{\partial s^{(1)}}
+=
+\delta^{(2)}\cdot w^{(2)}\cdot \sigma'(s^{(1)}).
+\]
+Thus the recursive relations are:
+\[
+\boxed{
+\delta^{(3)}=\hat{y}-y,\qquad
+\delta^{(2)}=\delta^{(3)}w^{(3)}\sigma'(s^{(2)}),\qquad
+\delta^{(1)}=\delta^{(2)}w^{(2)}\sigma'(s^{(1)}).
+}
+\]
+\newpage 
+\subsubsection*{Gradient with respect to parameters (2.2b)}
+We now compute each partial derivative using the sensitivities.
+\\
+\textbf{Layer 3 (output layer).}
+Since $\hat{y}=w^{(3)}z^{(2)}+b^{(3)}$,
+\[
+\frac{\partial \ell}{\partial w^{(3)}} 
+= \frac{\partial \ell}{\partial \hat{y}}\frac{\partial \hat{y}}{\partial w^{(3)}}
+= \delta^{(3)} z^{(2)},
+\qquad
+\frac{\partial \ell}{\partial b^{(3)}}
+= \frac{\partial \ell}{\partial \hat{y}}\frac{\partial \hat{y}}{\partial b^{(3)}}
+= \delta^{(3)}.
+\]
+\textbf{Layer 2.}
+Since $s^{(2)}=w^{(2)}z^{(1)}+b^{(2)}$,
+\[
+\frac{\partial \ell}{\partial w^{(2)}}
+= \frac{\partial \ell}{\partial s^{(2)}}\frac{\partial s^{(2)}}{\partial w^{(2)}}
+= \delta^{(2)} z^{(1)},
+\qquad
+\frac{\partial \ell}{\partial b^{(2)}}
+= \frac{\partial \ell}{\partial s^{(2)}}\frac{\partial s^{(2)}}{\partial b^{(2)}}
+= \delta^{(2)}.
+\]
+\textbf{Layer 1.}
+Since $s^{(1)}=(w^{(1)})^T x + b^{(1)}$ with $w^{(1)}\in\R^d$,
+\[
+\frac{\partial \ell}{\partial w^{(1)}}
+= \frac{\partial \ell}{\partial s^{(1)}}\frac{\partial s^{(1)}}{\partial w^{(1)}}
+= \delta^{(1)} x,
+\qquad
+\frac{\partial \ell}{\partial b^{(1)}}
+= \frac{\partial \ell}{\partial s^{(1)}}\frac{\partial s^{(1)}}{\partial b^{(1)}}
+= \delta^{(1)}.
+\]
+Collecting terms, the gradient is
+\[
+\boxed{
+\nabla_\theta \ell
+=
+\begin{bmatrix}
+\frac{\partial \ell}{\partial w^{(1)}}\\[0.25em]
+\frac{\partial \ell}{\partial b^{(1)}}\\[0.25em]
+\frac{\partial \ell}{\partial w^{(2)}}\\[0.25em]
+\frac{\partial \ell}{\partial b^{(2)}}\\[0.25em]
+\frac{\partial \ell}{\partial w^{(3)}}\\[0.25em]
+\frac{\partial \ell}{\partial b^{(3)}}
+\end{bmatrix}
+=
+\begin{bmatrix}
+\delta^{(1)}x\\
+\delta^{(1)}\\
+\delta^{(2)}z^{(1)}\\
+\delta^{(2)}\\
+\delta^{(3)}z^{(2)}\\
+\delta^{(3)}
+\end{bmatrix}.
+}
+\]
+\end{document}
