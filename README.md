@@ -4,7 +4,7 @@ Feed Forward Neural Network Regression techniques developed in **AM230: Numerica
 
 ---
 
-## 📄 Project Overview
+## Project Overview
 
 This project studies the theoretical and computational properties of **feedforward neural network regression** from an optimization perspective.
 
