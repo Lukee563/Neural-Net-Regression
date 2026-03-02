@@ -1,34 +1,84 @@
 # Neural-Net-Regression
-Feed Forward Neural Network Regression techniques covered in AM230 @ UC Santa Cruz
+
+Feed Forward Neural Network Regression techniques developed in **AM230: Numerical Optimization Methods**   
+
+---
+
+## 📄 Project Overview
+
+This project studies the theoretical and computational properties of **feedforward neural network regression** from an optimization perspective.
+
+We construct and analyze fully-connected neural networks and investigate:
+
+- Parameter growth and scaling behavior  
+- Memory constraints in high dimensions  
+- Nonconvexity of the training objective  
+- Backpropagation derivations  
+- Initialization pathologies and symmetry-induced degeneracy  
+- First-order vs second-order optimization feasibility  
+
+The emphasis is on rigorous mathematical derivation combined with numerical experimentation.
 
 ---
 
 ## Table of Contents
 
-### Section 1: Project Setup
-- [Feed Forward Neural Net Regression Overview](#feed-forward-neural-net-regression-overview) — Page 1
-- [Hidden Layer Optimization Objective](#hidden-layer-optimization-objective) — Page 2
+### 1. Project Setup
+- Input–Output Regression Framework  
+- Feedforward Neural Network Architecture  
+- Hidden Layer Optimization Objective  
 
-### Section 2: Problem Size in Neural Network Training
-- [Deriving Total Trainable Parameters](#deriving-total-trainable-parameters) — Page 3
-- [Parameter Growth Function Analysis](#parameter-growth-function-analysis) — Page 3
-- [Memory Usage in a "Small" Case](#memory-usage-in-a-small-case) — Page 3
-- [Implications for First-Order vs Second-Order Methods](#implications-for-first-order-vs-second-order-methods) — Page 3
+### 2. Problem Size in Neural Network Training
+- Derivation of Total Trainable Parameters  
+- Scaling with Width (m) and Depth (n)  
+- Memory Requirements (O(P) vs O(P²))  
+- Implications for First-Order vs Second-Order Methods  
 
-### Section 3: Properties of Neural Network Regression
-- [Nonconvexity of Neural Network Training](#nonconvexity-of-neural-network-training) — Page 4
-- [Hessian and Failure of Positive Semidefiniteness](#hessian-and-failure-of-positive-semidefiniteness) — Page 4
-- [Extension to the Empirical Loss](#extension-to-the-empirical-loss) — Page 5
+### 3. Theoretical Properties
+- Proof of Nonconvexity  
+- Hessian Structure and Indefiniteness  
+- Extension to the Empirical Risk  
 
-### Section 4: Backpropagation and Gradient Computation
-- [Backward Pass Derivation](#backward-pass-derivation) — Page 6
-- [Gradient with Respect to Parameters](#gradient-with-respect-to-parameters) — Page 7
+### 4. Backpropagation
+- Forward Pass Formulation  
+- Recursive Sensitivity Derivation  
+- Gradient Computation via Chain Rule  
 
-### Section 5: Neural Network Training & Initialization
-- [Quadratic Regularization](#quadratic-regularization) — Page 8
-- [Zero Initialization & Stationary Behavior](#zero-initialization--stationary-behavior) — Page 8
-- [Symmetry-Induced Degeneracy Proof](#symmetry-induced-degeneracy-proof) — Page 9
-- [Random Initialization Experiments](#random-initialization-experiments) — Page 10
-- [Initialization Scale Selection](#initialization-scale-selection) — Page 12
+### 5. Initialization & Optimization Behavior
+- Quadratic Regularization  
+- Zero Initialization and Stationary Points  
+- Symmetry-Induced Degeneracy (Inductive Proof)  
+- Random Initialization Experiments  
+- Initialization Scale and Vanishing Gradients  
+
+---
+
+## Numerical Experiments
+
+Experiments were implemented in MATLAB and include:
+
+- Two-hidden-layer neural network regression  
+- Line search gradient descent  
+- Zero vs Gaussian initialization comparisons  
+- RMSE / MAE evaluation  
+- Residual distribution analysis  
+
+---
+
+## Key Takeaways
+
+- Neural network training is fundamentally **nonconvex**.
+- Width drives parameter growth quadratically.
+- Full Hessian storage becomes infeasible at realistic scales.
+- Zero initialization creates symmetry-induced degeneracy.
+- Initialization scale directly affects gradient propagation.
+
+---
+
+## Tools
+
+- MATLAB
+- First-order optimization methods
+- Analytical derivations (chain rule, Hessian analysis)
 
 ---
